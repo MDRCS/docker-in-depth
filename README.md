@@ -172,4 +172,4 @@
     # testing flask webapp
     $ docker-compose run dockerapp python test.py
 
-    #pay attention including tests inside the app container increase the size.
+    # pay attention including tests inside the app container increase the size.
