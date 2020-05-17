@@ -405,4 +405,12 @@
 
     $ docker kill registry
 
+    # Swarm registry
+    $ docker service create --name registry --publish 5000:5000 registry
+    $ docker tag hello-world 127.0.0.1:5000/hello-world
+    $ docker push 127.0.0.1:5000/hello-world
+
+    - note that all nodes could see 127.0.0.1:5000 so the registry gonna be accessable to all nodes.
+
 ![](./static/docker_registry.png)
+
