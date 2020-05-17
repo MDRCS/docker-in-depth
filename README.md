@@ -414,3 +414,17 @@
 
 ![](./static/docker_registry.png)
 
+### - Problem deleting containers that have --restart=always :
+    $ docker update --restart=no 7870a58d16dd
+    $ docker container rm $(docker container ls -aq)
+    $ docker update --restart=no $(docker ps -a -q)
+
+    restart: "no"
+    restart: always
+    restart: on-failure
+    restart: unless-stopped
+
+    restart: always
+
+    # if contrainers is a service :
+    $ docker service rm wmiwp1lwcu45
