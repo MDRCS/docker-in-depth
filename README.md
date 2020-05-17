@@ -244,3 +244,118 @@
     $ docker stack services dockerapp_stack # check replicas added in redis
 
     $ docker stack rm dockerapp_stack
+
+
+### run nginx server
+
+    $ docker-machine start default
+    $ docker build -t nginx-server .
+    $ docker run -d -p 80:80 nginx-server
+
+
+### mysql admin
+
+    $ docker run --name mysql-server -e MYSQL_ROOT_PASSWORD=mdrahali -d mysql:latest
+    $ docker run -d --link "mysql-server:db" -p 8080:8080 adminer
+    # http://0.0.0.0:8080/
+    # login -> root
+    # password -> mdrahali
+
+### others
+
+    #filter containers
+    $ docker ps --filter status=exited
+    $ docker logs --tail 100 web
+    $ docker logs --tail 100 5a190e629977 # 10 lines logs about this container
+
+
+### - Swarm mode
+    $ docker swarm init
+    $ docker node ls
+    $ docker service create alpine ping 8.8.8.8
+    $ docker service ls
+    $ docker service update wmiwp1lwcu45 --replicas 3
+    $ docker service ps flamboyant_mclean
+    $ docker container rm -f flamboyant_mclean.1.2bzapu1crpcvcoizdeb5crjpa
+
+### - Multi-Container Swarm Application Architecture :
+
+![](./static/architecture_manager-worker.png)
+![](./static/architecture.png)
+
+    + A front-end web app in Python or ASP.NET Core which lets you vote between two options
+    + A Redis or NATS queue which collects new votes
+    + A .NET Core, Java or .NET Core 2.1 worker which consumes votes and stores them in…
+    + A Postgres or TiDB database backed by a Docker volume
+    + A Node.js or ASP.NET Core SignalR webapp which shows the results of the voting in real time
+
+    # create 3 nodes droplets - 2b2TdbA@8Tvk6TA
+    # ssh root@<ip address> node1, node2, node3
+        + node1 161.35.99.211
+        + node2 161.35.103.46
+        + node3 161.35.103.93
+
+    # swarm firewall -> https://www.bretfisher.com/docker-swarm-firewall-ports/
+
+    # swam cluster setup
+    $ node1: docker swarm init
+    $ node2: docker swarm join --token SWMTKN-1-2tv5pdj65jtub7b120q8bik4qtx6dpdbfs0kjw2sylgp0i993w-cdbqdyupnegazx81so6gejjzn 161.35.99.211:2377
+    $ node2: docker node ls
+    $ node1: docker node update --role manager node2
+    $ node1: docker swarm join-token manager
+    $ node3: docker swarm join --token SWMTKN-1-2tv5pdj65jtub7b120q8bik4qtx6dpdbfs0kjw2sylgp0i993w-11kst3v995qx8lgmqt2df9vhs 161.35.99.211:2377
+
+    #we have created 3 nodes managers
+    #now if we create a container with 3 replicas the containers will be distributed to the three managers
+
+    $ node1: docker service create --replicas 3 alpine ping 8.8.8.8
+    $ docker service ls
+    $ docker service ps ecstatic_mccarthy # see each container is running in a node manager.
+
+![](./static/ingress_loadbalancing.png)
+
+    #each swarm node manager have a load balancer that have the ips of containers running
+    in the cluster that is why each container is accessable from each swarm node manager ip addr.
+
+    #clean up all containers
+    $ docker rmi $(docker images --filter "dangling=true" -q --no-trunc)
+
+    #create an overlay network
+    $ docker network create -d overlay backend
+    $ docker network create -d overlay frontend
+    $ docker service create --name vote -p 80:80 \
+      --network frontend --replicas 2 dockersamples/examplevotingapp_vote
+
+    $ docker service create --name redis \
+      --network frontend --replicas 1 redis:3.2
+
+    $ docker service create --name worker \
+      --network frontend --network backend --replicas 1 bretfisher/examplevotingapp_worker:java
+
+    $ docker service create --name db --network backend -e POSTGRES_HOST_AUTH_METHOD=trust --mount type=volume,source=db-data,target=/var/lib/postgresql/data postgres:9.4
+
+    $ docker service create --name result \
+      --network backend --replicas 1 -p 5001:80 dockersamples/examplevotingapp_result
+
+    $ docker service ps worker
+    $ docker service logs redis
+
+    -> check the vote app in http://161.35.99.211
+    -> check the result app in http://161.35.99.211:5001/
+
+    # delete all services
+    $ docker service rm $(docker service ls -q)
+
+###- deploy stacks :
+
+![](./static/stacks.png)
+
+    + docker stack deploy -c voting-app.yml voteapp
+    + docker stack ls
+    + docker stack ps voteapp
+    + docker stack services voteapp
+    + docker network ls
+
+    -> check vote app -- http://161.35.99.211:5000/
+    -> check vote result app -- http://161.35.99.211:5001/
+    -> check stack visualizer -- http://161.35.99.211:8080/
