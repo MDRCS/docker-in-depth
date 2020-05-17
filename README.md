@@ -383,3 +383,26 @@
     Pay attention !! docker-compose is not for production -> use stack for production environment.
 
 
+![](./static/HEALTHCHECKS_CMDS.png)
+
+### - Docker Updates - Zero downtime :
+
+    # from myapp:1.2.0 to myapp:1.2.1
+    $ docker service update --image myapp:1.2.1 <service_name>
+
+    # add environement variable and delete a port.
+    $ docker service update --env-add NODE_ENV=production --publish-rm 8080
+
+    #change replicas in multiple services at the same time :
+    $ docker service scale web=6 api=4
+
+    # create local registry
+    $ docker run -d -p 5000:5000 -v --name registry registry:2
+
+    $ docker pull hello-world
+    $ docker tag hello-world 127.0.0.1:5000/hello-world
+    $ docker push 127.0.0.1:5000/hello-world
+
+    $ docker kill registry
+
+![](./static/docker_registry.png)
