@@ -8,6 +8,8 @@ services:
       - redis
     networks:
       - my_net
+    deploy:
+      replicas: 2
   redis:
     image: redis:3.2.0
     networks:

@@ -173,3 +173,74 @@
     $ docker-compose run dockerapp python test.py
 
     # pay attention including tests inside the app container increase the size.
+
+### - Deployment :
+
+    # - docker-machine setup
+    prob -> bash: docker-machine: command not found
+    $ brew install docker-machine
+    $ brew link docker-machine
+
+    $ docker-machine create -d virtualbox default
+    $ docker-machine start default
+    $ eval $(docker-machine env default)
+
+
+    # app deployment
+    # get token access from digitalocean api
+    $ docker-machine create --driver digitalocean --digitalocean-access-token e6ec5480f93ab6933e27b03e102805e1e7e9d029e2fad35eb3c9007648b0d15e docker-app-machine
+    $ docker-machine env docker-app-machine
+
+        export DOCKER_TLS_VERIFY="1"
+        export DOCKER_HOST="tcp://157.245.223.220:2376"
+        export DOCKER_CERT_PATH="/Users/mdrahali/.docker/machine/machines/docker-app-machine"
+        export DOCKER_MACHINE_NAME="docker-app-machine"
+
+    $ eval $(docker-machine env docker-app-machine)
+    $ docker info (now we are connected to another vm default -> docker-app-machine)
+    $ docker-compose -f prod.yml up -d
+    $ docker-machine ls
+    $ docker-machine inspect docker-app-machine
+
+    $ docker-machine rm docker-app-machine
+[+ DigitalOcean](https://docs.docker.com/machine/drivers/digital-ocean/)
+
+[+ Other hosting systems possibilities.](https://docs.docker.com/machine/drivers/)
+
+### - provision a swarm cluster
+
+![](./static/swarm_mode.png)
+![](./static/provision_swarm.png)
+
+    $ docker-machine create --driver digitalocean --digitalocean-access-token e6ec5480f93ab6933e27b03e102805e1e7e9d029e2fad35eb3c9007648b0d15e swarn-manager
+    $ docker-machine create --driver digitalocean --digitalocean-access-token e6ec5480f93ab6933e27b03e102805e1e7e9d029e2fad35eb3c9007648b0d15e swarn-node
+    $ docker swarm init
+    $ docker swarm init --advertise-addr 142.93.64.192
+    $ docker-machine ssh swarm-node
+    $ docker swarm join --token SWMTKN-1-0ayheabwy3fz9h89wajlur3vtrvo63n8otlcm1cpqrhev68424-49s5h6ejhiyqjnburp1l5rjbd 142.93.64.192:2377
+
+    # deploy docker stack with docker-compose
+    # docker stack is an services that share depandencies between them.
+    $ docker stack deploy --compose-file prod.yml dockerapp_stack
+    $ docker stack ls
+
+    #check replicas for each service
+    $ docker stack services dockerapp_stack
+
+    #we can access app fron node or manager ip addr -> ingress lowd balancing effect:
+    $ docker-machine ls
+    -> swarm-node 68.183.59.196:5000
+
+    # update our services in production
+    # Example : add replicas for redis datastore
+    $ vi prod.yml
+        redis:
+        image: redis:3.2.0
+        deploy:
+            replicas: 2
+
+
+    $ docker stack deploy --compose-file prod.yml dockerapp_stack
+    $ docker stack services dockerapp_stack # check replicas added in redis
+
+    $ docker stack rm dockerapp_stack

@@ -1,7 +1,7 @@
 version: "3.0"
 services:
   dockerapp:
-    image: jleetutorial/dockerapp
+    image: mdrahali/dockerapp
     ports:
       - "5000:5000"
     depends_on:
