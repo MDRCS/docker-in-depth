@@ -345,8 +345,9 @@
 
     # delete all services
     $ docker service rm $(docker service ls -q)
+    $ docker container rm $(docker container ls -q)
 
-###- deploy stacks :
+### - Docker stacks :
 
 ![](./static/stacks.png)
 
@@ -359,3 +360,26 @@
     -> check vote app -- http://161.35.99.211:5000/
     -> check vote result app -- http://161.35.99.211:5001/
     -> check stack visualizer -- http://161.35.99.211:8080/
+
+### - Docker Secrets :
+
+    $ touch psql_user.txt
+    $ echo "mysqluser" > psql_user.txt
+    $ docker secret create psql_user psql_user.txt
+    $ touch psql_pass.txt
+    $ echo "mysql_password" | docker secret create psql_pass -
+    $ docker secret ls
+    $ docker service create --name psql --secret psql_user --secret psql_pass -e POSTGRES_PASSWORD_FILE=/run/secrets/psql_pass -e POSTGRES_USER_FILE=/run/secrets/psql_user postgres
+    $ docker exec -it b65901110da9 bash
+    $ ls /run/secrets
+    $ cd /run/secrets
+    $ cat psql_pass
+        -> mysql_password
+
+    #using docker-compose
+    $ docker stack deploy -c postgresql_secrets_stack.yml mydb
+
+
+    Pay attention !! docker-compose is not for production -> use stack for production environment.
+
+
